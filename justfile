@@ -16,10 +16,12 @@ backend:
 frontend:
     cd frontend && npm run dev
 
-# Generate TypeScript types from the running backend's OpenAPI spec
-# Requires the backend to be running on :3001
+# Save the OpenAPI spec snapshot from the running backend and regenerate frontend types.
+# Requires the backend to be running on :3001.
+# Run this after any backend route or model change.
 gen-types:
-    cd frontend && npx openapi-typescript http://localhost:3001/openapi.json -o src/api/types.ts
+    curl -s http://localhost:3001/openapi.json -o openapi.json
+    cd frontend && npx openapi-typescript ../openapi.json -o src/api/types.ts
 
 # Install frontend dependencies
 install:
