@@ -14,7 +14,7 @@ backend:
 
 # Start frontend dev server only
 frontend:
-    cd frontend && npm run dev
+    cd frontend && npm run dev -- --host
 
 # Save the OpenAPI spec snapshot from the running backend and regenerate frontend types.
 # Requires the backend to be running on :3001.

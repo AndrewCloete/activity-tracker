@@ -7,7 +7,8 @@ import type {
   UpdateEntry,
 } from "./types";
 
-const BASE = "http://localhost:3001";
+// const BASE = "http://localhost:3001";
+const BASE = "http://172.31.66.19:3001"; // via VPN
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${BASE}${path}`, init);
