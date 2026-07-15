@@ -8,7 +8,7 @@ import type {
 } from "./schema";
 
 // const BASE = "http://localhost:3001";
-const BASE = "http://172.31.66.2:3001"; // via VPN
+const BASE = "http://172.31.66.60:3001"; // via VPN
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${BASE}${path}`, init);
