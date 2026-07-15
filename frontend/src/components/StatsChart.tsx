@@ -3,14 +3,12 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import type { ActivityStats } from "../api/types";
+import type { ActivityStats } from "../api/schema";
 
 const PALETTE = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -19,17 +17,22 @@ interface Props {
 }
 
 export default function StatsChart({ stats }: Props) {
-  if (stats.counts.length === 0) {
-    return <p style={{ color: "#888" }}>No data for this period.</p>;
-  }
+  const bottomMargin = 56;
 
   return (
     <div>
       <h3 style={{ marginBottom: "0.5rem" }}>Entry count</h3>
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={stats.counts} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={180 + bottomMargin}>
+        <BarChart data={stats.counts} margin={{ top: 4, right: 8, left: -16, bottom: bottomMargin }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11 }}
+            interval={0}
+            angle={-45}
+            textAnchor="end"
+            height={bottomMargin}
+          />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip />
           <Bar dataKey="count" fill={PALETTE[0]} radius={[3, 3, 0, 0]} />
@@ -41,29 +44,23 @@ export default function StatsChart({ stats }: Props) {
           <h3 style={{ marginBottom: "0.5rem" }}>
             {field.label} — sum &amp; avg
           </h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={field.data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={180 + bottomMargin}>
+            <BarChart data={field.data} margin={{ top: 4, right: 8, left: -16, bottom: bottomMargin }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11 }}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={bottomMargin}
+              />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line
-                type="monotone"
-                dataKey="sum"
-                stroke={PALETTE[fi % PALETTE.length]}
-                dot={false}
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="avg"
-                stroke={PALETTE[(fi + 1) % PALETTE.length]}
-                dot={false}
-                strokeWidth={2}
-                strokeDasharray="5 4"
-              />
-            </LineChart>
+              <Bar dataKey="sum" fill={PALETTE[fi % PALETTE.length]} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="avg" fill={PALETTE[(fi + 1) % PALETTE.length]} radius={[3, 3, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       ))}

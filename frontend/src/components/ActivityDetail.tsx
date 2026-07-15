@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "../api";
-import type { ActivityDetail as Detail, ActivityStats, LogEntry } from "../api/types";
+import type { ActivityDetail as Detail, ActivityStats, LogEntry } from "../api/schema";
 import AddEntry from "./AddEntry";
 import EditEntry from "./EditEntry";
 import StatsChart from "./StatsChart";
 
-type Period = "week" | "month" | "year";
+type Period = "day" | "week" | "month";
 
 interface Props {
   id: number;
@@ -16,7 +16,7 @@ interface Props {
 export default function ActivityDetail({ id, onBack }: Props) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [stats, setStats] = useState<ActivityStats | null>(null);
-  const [period, setPeriod] = useState<Period>("week");
+  const [period, setPeriod] = useState<Period>("day");
   const [addingEntry, setAddingEntry] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -196,7 +196,7 @@ export default function ActivityDetail({ id, onBack }: Props) {
       <h2 style={{ marginTop: "2rem", marginBottom: "0.5rem" }}>Stats</h2>
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-        {(["week", "month", "year"] as Period[]).map((p) => (
+        {(["day", "week", "month"] as Period[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}

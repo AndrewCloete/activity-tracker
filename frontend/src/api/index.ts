@@ -5,7 +5,7 @@ import type {
   FieldValue,
   LogEntry,
   UpdateEntry,
-} from "./types";
+} from "./schema";
 
 // const BASE = "http://localhost:3001";
 const BASE = "http://172.31.66.2:3001"; // via VPN
@@ -58,6 +58,6 @@ export const api = {
   deleteEntry: (activityId: number, entryId: number) =>
     del(`/activities/${activityId}/entries/${entryId}`),
 
-  getStats: (id: number, period: "week" | "month" | "year") =>
+  getStats: (id: number, period: "day" | "week" | "month") =>
     req<ActivityStats>(`/activities/${id}/stats?period=${period}`),
 };

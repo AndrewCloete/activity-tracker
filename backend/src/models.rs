@@ -67,9 +67,9 @@ pub struct UpdateEntry {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum Period {
+    Day,
     Week,
     Month,
-    Year,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -81,8 +81,8 @@ pub struct DailyCount {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct FieldStatPoint {
     pub date: String,
-    pub sum: f64,
-    pub avg: f64,
+    pub sum: Option<f64>,
+    pub avg: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

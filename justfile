@@ -16,6 +16,11 @@ backend:
 frontend:
     cd frontend && npm run dev -- --host
 
+# Stop whatever is listening on the backend (:3001) and frontend (:5173) ports
+stop:
+    -lsof -ti:3001 | xargs -r kill
+    -lsof -ti:5173 | xargs -r kill
+
 # Save the OpenAPI spec snapshot from the running backend and regenerate frontend types.
 # Requires the backend to be running on :3001.
 # Run this after any backend route or model change.

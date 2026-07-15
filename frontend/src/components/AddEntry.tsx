@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FieldSchema, FieldValue } from "../api/types";
+import type { FieldSchema, FieldValue } from "../api/schema";
 import { fromLocalDatetimeString, nowLocalDatetimeString } from "../utils";
 
 interface Props {

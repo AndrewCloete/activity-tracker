@@ -221,7 +221,7 @@ struct StatsQuery {
     path = "/activities/{id}/stats",
     params(
         ("id" = i64, Path, description = "Activity ID"),
-        ("period" = String, Query, description = "week | month | year")
+        ("period" = String, Query, description = "day | week | month")
     ),
     responses((status = 200, body = ActivityStats))
 )]

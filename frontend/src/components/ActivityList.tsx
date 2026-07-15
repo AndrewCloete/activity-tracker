@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "../api";
-import type { ActivitySummary } from "../api/types";
+import type { ActivitySummary } from "../api/schema";
 
 interface Props {
   onSelect: (id: number) => void;

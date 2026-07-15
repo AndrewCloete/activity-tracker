@@ -217,19 +217,59 @@ pub fn delete_entry(conn: &Connection, activity_id: i64, entry_id: i64) -> Resul
     Ok(n > 0)
 }
 
+// (bucket count, step size, step unit, strftime format). Buckets always run from the
+// oldest to the most recent full period ending now, so the x-axis is stable regardless
+// of where data actually exists.
+fn bucket_config(period: &Period) -> (i64, i64, &'static str, &'static str) {
+    match period {
+        Period::Day => (30, 1, "days", "%Y-%m-%d"),
+        Period::Week => (52, 7, "days", "%Y-W%W"),
+        Period::Month => (12, 1, "months", "%Y-%m"),
+    }
+}
+
+// Generates the full ordered list of bucket keys (oldest first) for the period, using
+// SQLite's own date arithmetic so the labels line up exactly with the GROUP BY below.
+fn generate_buckets(
+    conn: &Connection,
+    now_ts: i64,
+    count: i64,
+    step: i64,
+    unit: &str,
+    fmt: &str,
+) -> Result<Vec<String>> {
+    let sql = "
+        WITH RECURSIVE seq(n) AS (
+            SELECT 0
+            UNION ALL
+            SELECT n + 1 FROM seq WHERE n < ?1
+        )
+        SELECT strftime(?2, datetime(?3, 'unixepoch', '-' || (n * ?4) || ' ' || ?5))
+        FROM seq
+        ORDER BY n DESC
+    ";
+    let mut stmt = conn.prepare(sql)?;
+    let buckets = stmt
+        .query_map(params![count - 1, fmt, now_ts, step, unit], |r| r.get(0))?
+        .collect::<rusqlite::Result<Vec<String>>>()?;
+    Ok(buckets)
+}
+
 pub fn get_stats(conn: &Connection, activity_id: i64, period: &Period) -> Result<ActivityStats> {
     let ts = now();
-    let (cutoff, fmt) = match period {
-        Period::Week => (ts - 7 * 86400, "%Y-%m-%d"),
-        Period::Month => (ts - 30 * 86400, "%Y-%m-%d"),
-        // year view groups by week to keep data points manageable
-        Period::Year => (ts - 365 * 86400, "%Y-W%W"),
-    };
+    let (count, step, unit, fmt) = bucket_config(period);
     let period_str = match period {
+        Period::Day => "day",
         Period::Week => "week",
         Period::Month => "month",
-        Period::Year => "year",
     };
+
+    let buckets = generate_buckets(conn, ts, count, step, unit, fmt)?;
+
+    // Generous lower bound for the raw query; exact inclusion is decided by which
+    // rows land in a bucket key present in `buckets` below.
+    let days_per_step = if unit == "months" { 31 } else { step };
+    let cutoff = ts - count * days_per_step * 86400;
 
     let count_sql = format!(
         "SELECT strftime('{fmt}', logged_at, 'unixepoch') AS bucket, COUNT(*) AS cnt
@@ -238,14 +278,17 @@ pub fn get_stats(conn: &Connection, activity_id: i64, period: &Period) -> Result
          GROUP BY bucket ORDER BY bucket"
     );
     let mut stmt = conn.prepare(&count_sql)?;
-    let counts: Vec<DailyCount> = stmt
-        .query_map(params![activity_id, cutoff], |r| {
-            Ok(DailyCount {
-                date: r.get(0)?,
-                count: r.get(1)?,
-            })
-        })?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let count_map: BTreeMap<String, i64> = stmt
+        .query_map(params![activity_id, cutoff], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .collect::<rusqlite::Result<BTreeMap<_, _>>>()?;
+
+    let counts: Vec<DailyCount> = buckets
+        .iter()
+        .map(|b| DailyCount {
+            date: b.clone(),
+            count: count_map.get(b).copied().unwrap_or(0),
+        })
+        .collect();
 
     let field_sql = format!(
         "SELECT strftime('{fmt}', e.logged_at, 'unixepoch') AS bucket,
@@ -264,20 +307,35 @@ pub fn get_stats(conn: &Connection, activity_id: i64, period: &Period) -> Result
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let mut by_label: BTreeMap<String, Vec<FieldStatPoint>> = BTreeMap::new();
+    let mut by_label: BTreeMap<String, BTreeMap<String, (f64, f64)>> = BTreeMap::new();
     for (date, label, sum, avg) in raw {
-        by_label
-            .entry(label)
-            .or_default()
-            .push(FieldStatPoint { date, sum, avg });
+        by_label.entry(label).or_default().insert(date, (sum, avg));
     }
+
+    let field_stats: Vec<FieldStat> = by_label
+        .into_iter()
+        .map(|(label, points)| FieldStat {
+            label,
+            data: buckets
+                .iter()
+                .map(|b| {
+                    let (sum, avg) = points
+                        .get(b)
+                        .map(|&(s, a)| (Some(s), Some(a)))
+                        .unwrap_or((None, None));
+                    FieldStatPoint {
+                        date: b.clone(),
+                        sum,
+                        avg,
+                    }
+                })
+                .collect(),
+        })
+        .collect();
 
     Ok(ActivityStats {
         period: period_str.to_string(),
         counts,
-        field_stats: by_label
-            .into_iter()
-            .map(|(label, data)| FieldStat { label, data })
-            .collect(),
+        field_stats,
     })
 }

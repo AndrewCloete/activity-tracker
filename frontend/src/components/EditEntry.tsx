@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FieldValue, LogEntry, UpdateEntry } from "../api/types";
+import type { FieldValue, LogEntry, UpdateEntry } from "../api/schema";
 import { fromLocalDatetimeString, toLocalDatetimeString } from "../utils";
 
 interface Props {
